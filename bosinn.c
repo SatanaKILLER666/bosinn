@@ -1,47 +1,94 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+functions.h
+#ifndef FUNCTIONS_H
+#define FUNCTIONS_H
 
-// Функция для удаления символа из строки на месте (без доп. памяти)
-void remove_char(char *str, char char_to_remove) {
-  int i, j = 0;
-  for (i = 0; str[i] != '\0'; i++) {
-    if (str[i] != char_to_remove) {
-      str[j] = str[i];
-      j++;
+#include <string>
+#include <vector>
+
+template <typename T>
+int findIdx(const std::vector<T>& arr, const T& element);
+
+template <typename T>
+int count(const std::vector<T>& arr, const T& element);
+
+template <typename T>
+std::string specialize(const T& element);
+
+template <>
+std::string specialize<bool>(const bool& element);
+
+#endif
+
+functions.cpp
+
+
+#include "functions.h"
+#include <iostream>
+#include <sstream>
+
+template <typename T>
+int findIdx(const std::vector<T>& arr, const T& element) {
+    for (size_t i = 0; i < arr.size(); ++i) {
+        if (arr[i] == element)
+            return static_cast<int>(i);
     }
-  }
-  str[j] = '\0'; // Важно: Завершаем строку нулевым символом!
+    return -1;
 }
 
-int main(int argc, char *argv[]) {
-  FILE *outfile;
+template <typename T>
+int count(const std::vector<T>& arr, const T& element) {
+    int cnt = 0;
+    for (const auto& el : arr) {
+        if (el == element)
+            ++cnt;
+    }
+    return cnt;
+}
 
-  // Проверка количества аргументов командной строки
-  if (argc != 3) {
-    fprintf(stderr, "Использование: %s \"строка\" символ_для_удаления\n", argv[0]);
-    return 1;
-  }
+template <typename T>
+std::string specialize(const T& element) {
+    std::ostringstream oss;
+    oss << element;
+    return oss.str();
+}
 
-  // Получение аргументов командной строки
-  char *str = argv[1];
-  char char_to_remove = argv[2][0]; // Берем первый символ из второго аргумента
+template <>
+std::string specialize<bool>(const bool& element) {
+    return element ? "true" : "false";
+}
 
-  // Удаление символа из строки
-  remove_char(str, char_to_remove);
+template int findIdx<int>(const std::vector<int>&, const int&);
+template int findIdx<std::string>(const std::vector<std::string>&, const std::string&);
+template int findIdx<bool>(const std::vector<bool>&, const bool&);
 
-  // Открытие файла для записи
-  outfile = fopen("out.txt", "w");
-  if (outfile == NULL) {
-    perror("Ошибка при открытии файла out.txt");
-    return 1;
-  }
+template int count<int>(const std::vector<int>&, const int&);
+template int count<std::string>(const std::vector<std::string>&, const std::string&);
+template int count<bool>(const std::vector<bool>&, const bool&);
 
-  // Запись результата в файл
-  fprintf(outfile, "%s\n", str);
+template std::string specialize<int>(const int&);
+template std::string specialize<std::string>(const std::string&);
+template std::string specialize<bool>(const bool&);
 
-  // Закрытие файла
-  fclose(outfile);
+int main() {
+    std::vector<int> vInt{1, 2, 3, 2, 4, 2};
+    std::vector<std::string> vStr{"apple", "banana", "apple", "cherry"};
+    std::vector<bool> vBool{true, false, true, true};
 
-  return 0;
+    std::cout << "findIdx examples:" << std::endl;
+    std::cout << "Index of 2 in vInt: " << findIdx(vInt, 2) << std::endl;
+    std::cout << "Index of 'apple' in vStr: " << findIdx(vStr, std::string("apple")) << std::endl;
+    std::cout << "Index of false in vBool: " << findIdx(vBool, false) << std::endl;
+
+    std::cout << "\ncount examples:" << std::endl;
+    std::cout << "Count of 2 in vInt: " << count(vInt, 2) << std::endl;
+    std::cout << "Count of 'apple' in vStr: " << count(vStr, std::string("apple")) << std::endl;
+    std::cout << "Count of true in vBool: " << count(vBool, true) << std::endl;
+
+    std::cout << "\nspecialize examples:" << std::endl;
+    std::cout << "specialize(123): " << specialize(123) << std::endl;
+    std::cout << "specialize(\"hello\"): " << specialize(std::string("hello")) << std::endl;
+    std::cout << "specialize(true): " << specialize(true) << std::endl;
+    std::cout << "specialize(false): " << specialize(false) << std::endl;
+
+    return 0;
 }
