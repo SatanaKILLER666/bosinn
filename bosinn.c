@@ -1,116 +1,132 @@
-#ifndef COMPLEX_H
-#define COMPLEX_H
-
 #include <iostream>
+#include <vector>
+#include <functional>
+#include <algorithm>
+#include <chrono>
 
-class Complex {
+// Класс для измерения времени выполнения функций
+class TimeMeter {
 private:
-  double real;
-  double imaginary;
-
+    std::chrono::high_resolution_clock::time_point start_time;
+    std::chrono::high_resolution_clock::time_point end_time;
+    
 public:
-  Complex();
-  Complex(double real, double imaginary);
-  Complex(const Complex& other);
-
-  double getReal() const;
-  double getImaginary() const;
-
-  Complex operator+(const Complex& other) const;
-  Complex operator-(const Complex& other) const;
-  Complex operator*(const Complex& other) const;
-
-  Complex& operator+=(const Complex& other);
-  Complex& operator-=(const Complex& other);
-  Complex& operator*=(const Complex& other);
-
-  friend std::ostream& operator<<(std::ostream& os, const Complex& complex);
+    void start() {
+        start_time = std::chrono::high_resolution_clock::now();
+    }
+    
+    void stop() {
+        end_time = std::chrono::high_resolution_clock::now();
+    }
+    
+    double get_elapsed_time() const {
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        return duration.count() / 1000.0; // возвращаем время в миллисекундах
+    }
 };
 
-#endif
-#include "complex.h"
-
-Complex::Complex() : real(0.0), imaginary(0.0) {}
-
-Complex::Complex(double real, double imaginary) : real(real), imaginary(imaginary) {}
-
-Complex::Complex(const Complex& other) : real(other.real), imaginary(other.imaginary) {}
-
-double Complex::getReal() const { return real; }
-
-double Complex::getImaginary() const { return imaginary; }
-
-
-Complex Complex::operator+(const Complex& other) const {
-  return Complex(real + other.real, imaginary + other.imaginary);
+// Функция для измерения времени выполнения любой функции
+template<typename Func, typename... Args>
+double measure_time(Func func, Args&&... args) {
+    TimeMeter meter;
+    meter.start();
+    func(std::forward<Args>(args)...); // вызываем переданную функцию
+    meter.stop();
+    return meter.get_elapsed_time();
 }
 
-Complex Complex::operator-(const Complex& other) const {
-  return Complex(real - other.real, imaginary - other.imaginary);
+// Примеры функций для тестирования
+int multiply(int a, int b) {
+    // Имитация некоторой работы
+    std::vector<int> temp(1000, a);
+    int result = 0;
+    for (int i = 0; i < 1000; ++i) {
+        result += temp[i] * b;
+    }
+    return result / 1000;
 }
 
-Complex Complex::operator*(const Complex& other) const {
-  double newReal = real * other.real - imaginary * other.imaginary;
-  double newImaginary = real * other.imaginary + imaginary * other.real;
-  return Complex(newReal, newImaginary);
+double power(double base, int exponent) {
+    double result = 1.0;
+    for (int i = 0; i < exponent; ++i) {
+        result *= base;
+    }
+    return result;
 }
 
-Complex& Complex::operator+=(const Complex& other) {
-  real += other.real;
-  imaginary += other.imaginary;
-  return *this;
+void print_vector(const std::vector<int>& vec, const std::string& name) {
+    std::cout << name << ": ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i];
+        if (i != vec.size() - 1) std::cout << ", ";
+    }
+    std::cout << std::endl;
 }
-
-Complex& Complex::operator-=(const Complex& other) {
-  real -= other.real;
-  imaginary -= other.imaginary;
-  return *this;
-}
-
-Complex& Complex::operator*=(const Complex& other) {
-  double tempReal = real * other.real - imaginary * other.imaginary;
-  imaginary = real * other.imaginary + imaginary * other.real;
-  real = tempReal;
-  return *this;
-}
-
-std::ostream& operator<<(std::ostream& os, const Complex& complex) {
-  os << complex.real;
-  if (complex.imaginary >= 0) {
-    os << "+";
-  }
-  os << complex.imaginary << "i";
-  return os;
-}
-#include <iostream>
-#include "complex.h"
 
 int main() {
-  Complex c1;
-  Complex c2(2.0, 3.0);
-  Complex c3 = c2;
-
-  std::cout << "c1: " << c1 << std::endl;
-  std::cout << "c2: " << c2 << std::endl;
-  std::cout << "c3: " << c3 << std::endl;
-
-  Complex c4 = c1 + c2;
-  std::cout << "c1 + c2: " << c4 << std::endl;
-
-  Complex c5 = c2 - c3;
-  std::cout << "c2 - c3: " << c5 << std::endl;
-
-  Complex c6 = c2 * c3;
-  std::cout << "c2 * c3: " << c6 << std::endl;
-
-  c1 += c2;
-  std::cout << "c1 += c2: " << c1 << std::endl;
-
-  c1 -= c2;
-  std::cout << "c1 -= c2: " << c1 << std::endl;
-
-  c1 *= c2;
-  std::cout << "c1 *= c2: " << c1 << std::endl;
-
-  return 0;
+    // Часть 1: Измерение времени выполнения функций
+    
+    // Тестирование с лямбда-функцией
+    auto lambda_func = [](int x, int y) -> int {
+        int sum = 0;
+        for (int i = 0; i < 1000; ++i) {
+            sum += x * y + i;
+        }
+        return sum;
+    };
+    
+    double lambda_time = measure_time(lambda_func, 5, 3);
+    std::cout << "Время выполнения лямбда-функции: " << lambda_time << " мс" << std::endl;
+    
+    // Тестирование с std::bind
+    auto bound_func = std::bind(multiply, 10, std::placeholders::_1);
+    double bind_time = measure_time(bound_func, 7);
+    std::cout << "Время выполнения функции с std::bind: " << bind_time << " мс" << std::endl;
+    
+    // Тестирование с обычной функцией
+    double func_time = measure_time(power, 2.0, 10);
+    std::cout << "Время выполнения обычной функции: " << func_time << " мс" << std::endl;
+    
+    std::cout << std::endl;
+    
+    // Часть 2: Использование std::bind, std::multiplies и std::transform
+    // для возведения в степень всех чисел в векторе
+    
+    std::vector<int> numbers = {1, 2, 3, 4, 5};
+    std::vector<int> result(numbers.size());
+    int exponent = 3; // степень
+    
+    std::cout << "Возведение чисел в степень " << exponent << ":" << std::endl;
+    print_vector(numbers, "Исходный вектор");
+    
+    // Создаем функтор для возведения в степень с помощью std::bind и std::multiplies
+    auto power_func = std::bind(std::multiplies<int>(), 
+                               std::placeholders::_1, 
+                               std::placeholders::_1);
+    
+    // Применяем функтор несколько раз для возведения в нужную степень
+    std::vector<int> temp = numbers;
+    for (int i = 1; i < exponent; ++i) {
+        std::transform(temp.begin(), temp.end(), 
+                      numbers.begin(), temp.begin(), 
+                      std::multiplies<int>());
+    }
+    result = temp;
+    
+    print_vector(result, "Результат");
+    
+    // Альтернативный способ с использованием лямбда-функции
+    std::vector<int> result2(numbers.size());
+    std::transform(numbers.begin(), numbers.end(), result2.begin(),
+                  [exponent](int x) {
+                      int result = 1;
+                      for (int i = 0; i < exponent; ++i) {
+                          result *= x;
+                      }
+                      return result;
+                  });
+    
+    print_vector(result2, "Результат (альтернативный)");
+    
+    return 0;
 }
